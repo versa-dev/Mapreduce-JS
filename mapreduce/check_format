@@ -1,0 +1,152 @@
+#! /usr/bin/env python3
+
+from json import load
+from random import randint, seed
+import sys
+
+def check_join_format(data):
+    if type(data) != list:
+        print("The result should be a list")
+        return False
+    if len(data) == 0:
+        print("The result should contain some element...")
+        return False
+    for t in data:
+        if type(t) != list:
+            print("Each of the elements should have type list. Something funky happening at: \n", t)
+            return False
+        if t[0] != 'rele' or t[17] != 'disp':
+            print("Didn't join in the correct order at:\n{}".format(t))
+            return False
+    return True
+
+def check_inverted_format(data):
+    if type(data) != list:
+        print("output_inverted_index.json is not a list.")
+        return False
+    if not len(data):
+        print("output_inverted_index.json list should contain some element.")
+        return False
+    for word_tuple in data:
+        word = word_tuple[0]
+        associated_list = word_tuple[1]
+        if type(word) != str or type(associated_list) != list or len(associated_list) == 0 or len(word_tuple) != 2:
+            print("Something funky happening at item: ")
+            print(word_tuple)
+            return False
+        for document in associated_list:
+            if type(document) != str:
+                print("Something funky happening at item: ")
+                print(word_tuple)
+                return False
+    return True
+
+def check_netflix_format(data, stage):
+    if stage == 'stage1':
+        print("Checking stage1 output....")
+        if type(data) != list or len(data) == 0:
+            print("stage1 output is not a list but it is supposed to, or the data should contain\
+                    some elements.")
+            return False
+        for movie_tuple in data:
+            movie = movie_tuple[0]
+            reviews = movie_tuple[1]
+            if len(movie_tuple) != 2 or type(movie) != str or type(reviews) != list:
+                print("Something funky happening at item: ", movie_tuple)
+                print("The list for this movie should contain 2 elements: (1) a string that is the name of the movie, and (2) a list of reviews associated with this movie.")
+                return False
+            for review in reviews:
+                if len(review) != 2 or type(review[0]) != str or type(review[1]) != int:
+                    print("Something funky happening at item: \n", movie_tuple, "\nfor review: \n", review)
+                    print("Each review is supposed to contain 2 elements, the first one being the string of the ID of user who gave the review, and the second one being the integer of the rating given.")
+                    return False
+        return True
+
+    elif stage == 'stage2':
+        print("Checking stage2 output....")
+        if type(data) != list or len(data) == 0:
+            print("stage2 output is not a list when it should be, or the data should contain some elements")
+            return False
+        for movie_tuple in data:
+            movie = movie_tuple[0]
+            other_movies = movie_tuple[1]
+            if type(movie) != str or type(other_movies) != list or len(movie_tuple) != 2:
+                print("Something funky happening at item: ", movie_tuple)
+        for other_movie in other_movies:
+            if type(other_movie) != list:
+                print("Incorrect type for ", other_movie, ": must be list")
+                return False
+            if type(other_movie[0]) != str:
+                print("Incorrect format for movie title at item: ", 
+				movie_tuple, "with associated movie: ", other_movie)
+                return False
+            if not movie < other_movie[0]:
+                print("Inner movie {} does not come alphabetically after outer movie {} in record: ".format(other_movie[0], movie))
+                print(movie_tuple)
+                return False
+            if len(other_movie) != 8:
+                print("Incorrect length for associated movie - must contain 8 values: title, correlation_value, regularized_correlation_value, cosine_similarity_value, jaccard_similarity_value, n, n1, n2")
+                return False
+        return True
+    else:  # final stage
+        if type(data) != list:
+            print("The result should have type list.")
+            return False
+        if len(data) == 0:
+            print("The result should have some element in it.")
+            return False
+        for movie_pair_meta in data:
+            if type(movie_pair_meta) != list or len(movie_pair_meta) != 2 or type(movie_pair_meta[0]) != list or type(movie_pair_meta[1]) != list:
+                print("Each list should contain two lists. Something funky happening here: \n", movie_pair_meta)
+                return False
+            if len(movie_pair_meta[0]) != 2:
+                print("Incorrect length for list: \n", movie_pair_meta[0], "\n when considering this pair: \n", movie_pair_meta
+				, "\n expected: 2, got: ", len(movie_pair_meta[0]))
+                return False
+            for name in movie_pair_meta[0]:
+                if type(name) != str:
+                    print("Incorrect type for: ", name, "expected: str, got: ", type(name))
+                    return False
+            if not movie_pair_meta[0][0] < movie_pair_meta[0][1]:
+                print("Movie name tuple is not in alphabetical order for record:")
+                print(movie_pair_meta)
+                return False
+            if len(movie_pair_meta[1]) != 7:
+                print("Incorrect length for list: \n", movie_pair_meta[1], "\n when considering this pair: \n", movie_pair_meta
+				, "\n expected: 7, got: ", len(movie_pair_meta[1]))
+                return False
+            for ele in movie_pair_meta[1]:
+                if type(ele) != float and type(ele) != int:
+                    print("There exists an element in ", movie_pair_meta[1], " that is of incorrect type.")
+                    print("Element ", ele, " is of type ", type(ele), "and not float or int")
+                    return False
+        return type(data) == list and len(data) and type(data[0]) == list and \
+            len(data[0]) and type(data[0][0]) == list and type(data[0][1]) == list and \
+            len(data[0][0]) == 2 and type(data[0][0][0]) == str and type(data[0][0][1]) == str and \
+            len(data[0][1]) == 7
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: ./check_format /PATH/TO/*.json")
+        sys.exit(1)
+
+    path_to_json_file = sys.argv[1]
+
+    with open(path_to_json_file) as f:
+        data = load(f)
+
+    res = False
+    if 'join' in path_to_json_file:
+        res = check_join_format(data)
+    elif 'inverted_index' in path_to_json_file:
+        res = check_inverted_format(data)
+    else:  # netflix
+        for stage in ['stage1', 'stage2', 'final']:
+            if stage in path_to_json_file:
+                res = check_netflix_format(data, stage)
+                break
+
+    if res:
+        print("Correct format!")
+    else:
+        print("Error in {}".format(path_to_json_file))

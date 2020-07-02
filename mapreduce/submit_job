@@ -1,0 +1,10 @@
+#! /bin/bash
+
+STUDENT=$(whoami)
+FILE=$1
+
+(sleep 10 && gsutil rm -rf gs://$STUDENT/google-cloud-dataproc-metainfo/ 2> /dev/null) &
+gcloud dataproc jobs submit pyspark $FILE --region=us-east4 --cluster=<cluster-name> --bucket=$STUDENT -- -d /data/recommendations/huge/ -u $STUDENT -n 128
+mkdir -p output_huge 2> /dev/null
+rm -r output_huge/* 2> /dev/null
+gsutil mv gs://$STUDENT/* output_huge 2> /dev/null

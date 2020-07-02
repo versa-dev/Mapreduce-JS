@@ -1,0 +1,80 @@
+#! /usr/bin/env python3
+
+from json import load
+from os.path import exists
+import sys
+
+
+def check_inverted_index_output(student_data, ta_data):
+    student_data = tuple(sorted(map(lambda e: (e[0], tuple(sorted(e[1]))), student_data), key=lambda e: e[0]))
+    ta_data = tuple(sorted(map(lambda e: (e[0], tuple(sorted(e[1]))), ta_data), key=lambda e: e[0]))
+    if student_data == ta_data:
+        print("outputs match!")
+    else:
+        print("outputs don't match :/")
+        sys.exit(1)
+
+
+def check_stage_1_output(student_data, ta_data):
+    student_data = tuple(sorted(map(lambda e: (e[0], tuple(sorted(map(tuple, e[1])))), student_data)))
+    ta_data = tuple(sorted(map(lambda e: (e[0], tuple(sorted(map(tuple, e[1])))), ta_data)))
+    if student_data == ta_data:
+        print("outputs match!")
+    else:
+        print("outputs don't match :/")
+        sys.exit(1)
+
+
+def check_stage_2_output(student_data, ta_data):
+    student_data = tuple(sorted(map(lambda e: (e[0], tuple(sorted(map(tuple, e[1])))), student_data)))
+    ta_data = tuple(sorted(map(lambda e: (e[0], tuple(sorted(map(tuple, e[1])))), ta_data)))
+    if student_data == ta_data:
+        print("outputs match!")
+    else:
+        print("outputs don't match :/")
+        sys.exit(1)
+
+
+def check_final_output(student_data, ta_data):
+    student_data = tuple(sorted(map(lambda e: (tuple(e[0]), tuple(e[1])), student_data)))
+    ta_data = tuple(sorted(map(lambda e: (tuple(e[0]), tuple(e[1])), ta_data)))
+    if student_data == ta_data:
+        print("outputs match!")
+    else:
+        print("outputs don't match :/")
+        sys.exit(1)
+
+
+usage_string = "Usage: ./check_outputs_equal </PATH/TO/YOUR/*.json> </PATH/TO/TA/*.json>\n\tNOTE: Can only be used for inverted_index and similarities"
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print(usage_string)
+        sys.exit(1)
+
+    path_to_student_json_file = sys.argv[1]
+    path_to_ta_json_file = sys.argv[2]
+    if not exists(path_to_student_json_file) or not exists(path_to_ta_json_file):
+        print(usage_string)
+        sys.exit(1)
+
+    with open(path_to_student_json_file) as student_json_file, open(path_to_ta_json_file) as ta_json_file:
+        student_data = load(student_json_file)
+        ta_data = load(ta_json_file)
+
+    if "inverted_index" in path_to_student_json_file and "inverted_index" in path_to_ta_json_file:
+        check_inverted_index_output(student_data, ta_data)
+    elif "netflix" in path_to_student_json_file and "netflix" in path_to_ta_json_file:
+        if "stage1" in path_to_student_json_file and "stage1" in path_to_ta_json_file:
+            check_stage_1_output(student_data, ta_data)
+        elif "stage2" in path_to_student_json_file and "stage2" in path_to_ta_json_file:
+            check_stage_2_output(student_data, ta_data)
+        elif "final" in path_to_student_json_file and "final" in path_to_ta_json_file:
+            check_final_output(student_data, ta_data)
+        else:
+            print(usage_string)
+            sys.exit(1)
+    else:
+        print(usage_string)
+        sys.exit(1)
+
